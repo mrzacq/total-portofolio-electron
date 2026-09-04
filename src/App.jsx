@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AssetForm from "./components/AssetForm";
 import PortfolioSummary from "./components/PortfolioSummary";
 import DonutChart from "./components/DonutChart";
 import LegendAssets from "./components/LegendAssets";
 import TableAssets from "./components/TableAssets";
 import DataActions from "./components/DataActions";
+import Toast from "./components/Toast";
+import ConfirmModal from "./components/ConfirmModal";
 import { useAssets } from "./hooks/useAssets";
 import { downloadJson, readJsonFile } from "./utils/file";
+import { sortByValueDesc } from "./utils/format";
 
 export default function App() {
   const {
@@ -18,13 +21,43 @@ export default function App() {
     importAssets,
   } = useAssets();
   const [editingId, setEditingId] = useState(null);
+  const [toast, setToast] = useState({ message: "", isError: false, visible: false });
+  const [confirmState, setConfirmState] = useState({ open: false });
+  const toastTimer = useRef();
 
   const total = assets.reduce((s, a) => s + (Number(a.value) || 0), 0);
   const editingAsset = assets.find((a) => a.id === editingId) ?? null;
+  const sortedAssets = sortByValueDesc(assets);
+
+  const showToast = (message, isError = false) => {
+    clearTimeout(toastTimer.current);
+    setToast({ message, isError, visible: true });
+    toastTimer.current = setTimeout(
+      () => setToast((t) => ({ ...t, visible: false })),
+      2800
+    );
+  };
+
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setConfirmState({ open: false });
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  const askConfirm = (title, body, onConfirm) => {
+    setConfirmState({ open: true, title, body, onConfirm });
+  };
+  const closeConfirm = () => setConfirmState({ open: false });
 
   const handleSubmit = (asset) => {
+    const isEdit = Boolean(asset.id);
     addOrUpdateAsset(asset);
     setEditingId(null);
+    showToast(isEdit ? "Aset diperbarui." : "Aset ditambahkan.");
   };
 
   const handleEdit = (id) => {
@@ -33,80 +66,115 @@ export default function App() {
   };
 
   const handleDelete = (id) => {
-    if (confirm("Apakah kamu ingin menghapus aset ini?")) deleteAsset(id);
+    const asset = assets.find((a) => a.id === id);
+    askConfirm("Hapus Aset", `Hapus "${asset?.name}" dari portofolio?`, () => {
+      deleteAsset(id);
+      if (editingId === id) setEditingId(null);
+      closeConfirm();
+      showToast("Aset dihapus.");
+    });
   };
 
   const handleClearAll = () => {
-    if (confirm("Hapus semua data?")) clearAssets();
+    if (assets.length === 0) return;
+    askConfirm(
+      "Hapus Semua Data",
+      "Semua aset akan dihapus permanen dari perangkat ini. Lanjutkan?",
+      () => {
+        clearAssets();
+        setEditingId(null);
+        closeConfirm();
+        showToast("Semua data dihapus.");
+      }
+    );
   };
 
-  const handleExport = () => downloadJson(assets, "portofolio.json");
+  const handleExport = () => {
+    downloadJson(assets, "holdings.json");
+    showToast("Portofolio diexport.");
+  };
 
   const handleImport = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     try {
-      importAssets(await readJsonFile(file));
+      const data = await readJsonFile(file);
+      importAssets(data);
+      showToast(`${data.length} aset diimport.`);
     } catch (err) {
-      alert("Gagal import: " + err.message);
+      showToast("Gagal import: " + err.message, true);
+    } finally {
+      e.target.value = "";
     }
   };
 
   return (
-    <div className="bg-slate-50 min-h-screen p-6">
-      <div className="container mx-auto">
-        <header className="mb-6">
-          <h1 className="text-2xl font-semibold">Total Portofolio</h1>
-          <p className="text-sm text-slate-600">
-            Tambah aset, simpan, lihat total & persentase visual (donut)
-          </p>
-        </header>
+    <div className="tp-shell">
+      <header className="tp-header">
+        <div>
+          <h1>
+            <span className="tp-accent-dot"></span>Holdings
+          </h1>
+          <p>Catat aset, lihat total kekayaan, dan pantau alokasi terhadap target.</p>
+        </div>
+      </header>
 
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <section className="lg:col-span-1 bg-white p-4 rounded-lg shadow">
-            <h2 className="font-medium mb-3">
-              {editingAsset ? "Edit Aset" : "Tambah / Edit Aset"}
-            </h2>
+      <main className="tp-layout">
+        <div>
+          <section className="tp-panel">
+            <h2 className="tp-panel-title">{editingAsset ? "Edit Aset" : "Tambah Aset"}</h2>
             <AssetForm
               editingAsset={editingAsset}
               onSubmit={handleSubmit}
               onCancelEdit={() => setEditingId(null)}
-            />
-
-            <hr className="my-4" />
-
-            <PortfolioSummary
-              total={total}
-              count={assets.length}
-              lastUpdated={lastUpdated}
+              onInvalid={() => showToast("Isi nama dan nilai aset dengan benar.", true)}
             />
           </section>
 
-          <section className="lg:col-span-2 bg-white p-4 rounded-lg shadow flex flex-col">
-            <h2 className="font-medium mb-3">Visualisasi & Rincian</h2>
-            <div className="flex flex-col lg:items-start lg:flex-row gap-6">
-              <DonutChart assets={assets} total={total} />
-              <div className="flex-1 space-y-4">
-                <LegendAssets assets={assets} total={total} />
+          <section className="tp-panel">
+            <h2 className="tp-panel-title">Total Portofolio</h2>
+            <PortfolioSummary total={total} count={assets.length} lastUpdated={lastUpdated} />
+          </section>
+        </div>
+
+        <div>
+          <section className="tp-panel">
+            <h2 className="tp-panel-title">Distribusi Aset</h2>
+            {sortedAssets.length === 0 ? (
+              <div className="tp-empty-state">Belum ada data aset.</div>
+            ) : (
+              <div className="tp-allocation-grid">
+                <DonutChart assets={sortedAssets} total={total} />
+                <LegendAssets assets={sortedAssets} total={total} />
               </div>
-            </div>
-
-            <div className="border shadow mt-4 rounded-lg p-4">
-              <TableAssets
-                assets={assets}
-                total={total}
-                onDelete={handleDelete}
-                onEdit={handleEdit}
-              />
-              <DataActions
-                onClearAll={handleClearAll}
-                onExport={handleExport}
-                onImport={handleImport}
-              />
-            </div>
+            )}
           </section>
-        </main>
-      </div>
+
+          <section className="tp-panel">
+            <h2 className="tp-panel-title">Rincian Kepemilikan</h2>
+            <TableAssets
+              assets={sortedAssets}
+              total={total}
+              onDelete={handleDelete}
+              onEdit={handleEdit}
+            />
+            <DataActions
+              onClearAll={handleClearAll}
+              onExport={handleExport}
+              onImport={handleImport}
+            />
+          </section>
+        </div>
+      </main>
+
+      <Toast message={toast.message} isError={toast.isError} visible={toast.visible} />
+      <ConfirmModal
+        open={confirmState.open}
+        title={confirmState.title}
+        body={confirmState.body}
+        onCancel={closeConfirm}
+        onConfirm={confirmState.onConfirm}
+      />
     </div>
   );
 }

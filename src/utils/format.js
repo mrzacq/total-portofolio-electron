@@ -28,7 +28,18 @@ export const formatDateTime = (date) => {
 
 export const uid = () => "id_" + Math.random().toString(36).slice(2, 9);
 
-export const pickColor = (i) => `hsl(${(i * 47) % 360} 70% 50%)`;
+const CHART_COLORS = [
+  "#FF9F0A",
+  "#E8B45C",
+  "#4A9B8E",
+  "#C97B63",
+  "#7C93C9",
+  "#A78BFA",
+  "#D4A5A5",
+  "#8FBF8F",
+];
+
+export const pickColor = (i) => CHART_COLORS[i % CHART_COLORS.length];
 
 export const sortByValueDesc = (assets) =>
   [...assets].sort((a, b) => b.value - a.value);

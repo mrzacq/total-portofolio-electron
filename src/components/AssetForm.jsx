@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { parseNumberInput } from "../utils/format";
 
-export default function AssetForm({ editingAsset, onSubmit, onCancelEdit }) {
+export default function AssetForm({ editingAsset, onSubmit, onCancelEdit, onInvalid }) {
   const nameRef = useRef();
   const valueRef = useRef();
   const targetRef = useRef();
@@ -27,7 +27,10 @@ export default function AssetForm({ editingAsset, onSubmit, onCancelEdit }) {
       ? Number(targetRef.current.value)
       : null;
 
-    if (!name) return alert("Isi nama dan nilai aset dengan benar.");
+    if (!name || !value) {
+      onInvalid();
+      return;
+    }
 
     onSubmit({ id: editingAsset?.id, name, value, target });
     resetForm();
@@ -39,56 +42,52 @@ export default function AssetForm({ editingAsset, onSubmit, onCancelEdit }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <div>
-        <label className="text-sm block mb-1">Nama Aset</label>
+    <form onSubmit={handleSubmit} autoComplete="off">
+      <div className="tp-field">
+        <label htmlFor="f-name">Nama Aset</label>
         <input
+          id="f-name"
           ref={nameRef}
           type="text"
           required
-          placeholder="contoh: Bitcoin, Saham BBCA, Emas"
-          className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+          placeholder="Bitcoin, Saham BBCA, Emas"
         />
       </div>
-      <div>
-        <label className="text-sm block mb-1">Nilai Aset (angka)</label>
+      <div className="tp-field">
+        <label htmlFor="f-value">Nilai Aset</label>
         <input
+          id="f-value"
           ref={valueRef}
           type="text"
           inputMode="numeric"
           required
-          placeholder="500000000 atau 10.000.000"
-          className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+          placeholder="500.000.000"
         />
+        <div className="tp-field-hint">
+          Boleh pakai titik/koma ribuan, contoh: 10.000.000
+        </div>
       </div>
-      <div>
-        <label className="text-sm block mb-1">
-          Target Alokasi (%) — opsional
+      <div className="tp-field" style={{ marginBottom: 0 }}>
+        <label htmlFor="f-target">
+          Target Alokasi % <span style={{ color: "var(--tertiary)" }}>— opsional</span>
         </label>
         <input
+          id="f-target"
           ref={targetRef}
           type="number"
           min="0"
           max="100"
           step="0.01"
-          placeholder="misal: 20"
-          className="w-full border rounded px-3 py-2 focus:outline-none focus:ring"
+          placeholder="20"
         />
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="submit"
-          className="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-        >
+      <div className="tp-form-actions">
+        <button type="submit" className="tp-btn tp-btn-primary">
           {editingAsset ? "Update" : "Tambah"}
         </button>
-        <button
-          type="button"
-          onClick={handleClear}
-          className="px-4 py-2 bg-slate-200 rounded hover:bg-slate-300"
-        >
-          Bersihkan Form
+        <button type="button" onClick={handleClear} className="tp-btn tp-btn-ghost">
+          Bersihkan
         </button>
       </div>
     </form>
