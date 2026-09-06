@@ -3,11 +3,13 @@ const path = require('node:path');
 
 const isDev = !app.isPackaged;
 const devServerUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+const iconPath = path.join(__dirname, '../build/icon.png');
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1280,
     height: 800,
+    icon: iconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -24,6 +26,9 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  if (isDev && process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(iconPath);
+  }
   createWindow();
 
   app.on('activate', () => {
