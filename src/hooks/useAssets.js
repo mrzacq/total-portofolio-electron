@@ -34,6 +34,13 @@ export function useAssets() {
     }
   };
 
+  const topUpAsset = (id, amount) =>
+    saveAssets(
+      assets.map((a) =>
+        a.id === id ? { ...a, value: (Number(a.value) || 0) + amount } : a
+      )
+    );
+
   const deleteAsset = (id) => saveAssets(assets.filter((a) => a.id !== id));
 
   const clearAssets = () => saveAssets([]);
@@ -54,6 +61,7 @@ export function useAssets() {
     assets,
     lastUpdated,
     addOrUpdateAsset,
+    topUpAsset,
     deleteAsset,
     clearAssets,
     importAssets,

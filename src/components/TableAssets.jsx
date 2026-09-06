@@ -1,6 +1,7 @@
+import { Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { formatCurrency } from "../utils/format";
 
-export default function TableAssets({ assets, total, onDelete, onEdit }) {
+export default function TableAssets({ assets, total, onDelete, onEdit, onTopUp }) {
   if (assets.length === 0)
     return (
       <div className="tp-empty-state">
@@ -49,17 +50,26 @@ export default function TableAssets({ assets, total, onDelete, onEdit }) {
                     "-"
                   )}
                 </td>
-                <td>
+                <td className="tp-actions-cell">
+                  <button
+                    onClick={() => onTopUp(a.id)}
+                    className="tp-link-btn topup"
+                  >
+                    <PlusCircle size={14} />
+                    Top Up
+                  </button>
                   <button
                     onClick={() => onEdit(a.id)}
                     className="tp-link-btn edit"
                   >
+                    <Pencil size={14} />
                     Edit
-                  </button>{" "}
+                  </button>
                   <button
                     onClick={() => onDelete(a.id)}
                     className="tp-link-btn delete"
                   >
+                    <Trash2 size={14} />
                     Hapus
                   </button>
                 </td>

@@ -7,6 +7,7 @@ import TableAssets from "./components/TableAssets";
 import DataActions from "./components/DataActions";
 import Toast from "./components/Toast";
 import ConfirmModal from "./components/ConfirmModal";
+import TopUpModal from "./components/TopUpModal";
 import { useAssets } from "./hooks/useAssets";
 import { downloadJson, readJsonFile } from "./utils/file";
 import { sortByValueDesc } from "./utils/format";
@@ -16,6 +17,7 @@ export default function App() {
     assets,
     lastUpdated,
     addOrUpdateAsset,
+    topUpAsset,
     deleteAsset,
     clearAssets,
     importAssets,
@@ -23,6 +25,7 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [toast, setToast] = useState({ message: "", isError: false, visible: false });
   const [confirmState, setConfirmState] = useState({ open: false });
+  const [topUpState, setTopUpState] = useState({ open: false, asset: null });
   const toastTimer = useRef();
 
   const total = assets.reduce((s, a) => s + (Number(a.value) || 0), 0);
@@ -42,7 +45,10 @@ export default function App() {
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if (e.key === "Escape") setConfirmState({ open: false });
+      if (e.key === "Escape") {
+        setConfirmState({ open: false });
+        setTopUpState({ open: false, asset: null });
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -63,6 +69,20 @@ export default function App() {
   const handleEdit = (id) => {
     setEditingId(id);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleTopUp = (id) => {
+    const asset = assets.find((a) => a.id === id);
+    if (!asset) return;
+    setTopUpState({ open: true, asset });
+  };
+
+  const closeTopUp = () => setTopUpState({ open: false, asset: null });
+
+  const handleTopUpConfirm = (amount) => {
+    topUpAsset(topUpState.asset.id, amount);
+    showToast(`Top up ${topUpState.asset.name} berhasil.`);
+    closeTopUp();
   };
 
   const handleDelete = (id) => {
@@ -157,6 +177,7 @@ export default function App() {
               total={total}
               onDelete={handleDelete}
               onEdit={handleEdit}
+              onTopUp={handleTopUp}
             />
             <DataActions
               onClearAll={handleClearAll}
@@ -174,6 +195,12 @@ export default function App() {
         body={confirmState.body}
         onCancel={closeConfirm}
         onConfirm={confirmState.onConfirm}
+      />
+      <TopUpModal
+        open={topUpState.open}
+        asset={topUpState.asset}
+        onCancel={closeTopUp}
+        onConfirm={handleTopUpConfirm}
       />
     </div>
   );
