@@ -1,16 +1,53 @@
-# React + Vite
+# Total Portofolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Aplikasi desktop (Electron + React) untuk mencatat dan memantau portofolio aset pribadi — total kekayaan, distribusi alokasi per aset, dan progres terhadap target.
 
-Currently, two official plugins are available:
+## Fitur
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- Tambah, edit, top up, dan hapus aset
+- Ringkasan total portofolio dan jumlah aset
+- Distribusi aset dalam donut chart beserta legend
+- Tabel rincian kepemilikan dengan persentase terhadap total
+- Export dan import data portofolio dalam format JSON
+- Data disimpan secara lokal di perangkat (localStorage), tidak ada server/backend
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- [Electron](https://www.electronjs.org/) — shell aplikasi desktop
+- [React 19](https://react.dev/) + [Vite](https://vite.dev/) — UI dan tooling dev
+- [Tailwind CSS v4](https://tailwindcss.com/) — styling
+- [Recharts](https://recharts.org/) — donut chart
+- [Lucide React](https://lucide.dev/) — icon set
 
-## Expanding the ESLint configuration
+## Menjalankan Secara Lokal
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```bash
+npm install
+
+# Jalankan sebagai web app (browser) dengan HMR
+npm run dev
+
+# Jalankan sebagai aplikasi Electron (dev)
+npm run electron:dev
+```
+
+## Build
+
+```bash
+# Build bundle web (output ke dist/)
+npm run build
+
+# Build installer aplikasi desktop (output ke release/)
+npm run electron:build
+```
+
+## Struktur Proyek
+
+```
+electron/        Proses utama & preload script Electron
+src/
+  components/    Komponen UI (form aset, chart, tabel, modal, dll.)
+  hooks/         Logic state aset (useAssets)
+  utils/         Helper format angka & file import/export
+  styles/        Tema dan palet warna
+```
